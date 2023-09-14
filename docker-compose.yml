@@ -1,0 +1,48 @@
+version: "3"
+networks:
+  loki:
+services:
+  loki:
+    image: grafana/loki:2.4.0
+    ports:
+      - "3100:3100"
+    restart: unless-stopped
+    command:
+      - "-config.file=/etc/loki/loki-config.yml"
+    networks:
+      - loki
+    volumes:
+      - ./loki/loki-config.yml:/etc/loki/loki-config.yml
+  promtail:
+    image: grafana/promtail:2.4.0
+    ports:
+      - "8074:8074" # this is only needed if you are going to send syslogs
+    restart: unless-stopped
+    command:
+      - "-config.file=/etc/promtail/promtail-config.yml"
+    networks:
+      - loki
+    volumes:
+      - ./promtail/promtail-config.yml:/etc/promtail/promtail-config.yml
+      - /Users/mosseskippe/Documents/GitHub/recon-extractor/spring.log:/var/log/spring.log
+  grafana:
+    image: grafana/grafana:latest
+    user: "1000"
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    networks:
+      - loki
+    volumes:
+      - ./grafana/grafana.ini:/etc/grafana/grafana.ini
+  alertmanager:
+    image: prom/alertmanager:v0.23.0
+    restart: unless-stopped
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alert/alertmanager.yml:/config/alertmanager.yml
+      - /Users/mosseskippe/Documents/grafana/grafana.ini:/etc/grafana/grafana.ini
+    command:
+      - "--config.file=/config/alertmanager.yml"
+
